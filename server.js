@@ -9,8 +9,8 @@ const {PORT} = process.env
 const morgan = require("morgan")
 const cors = require("cors")
 const getData = require("./youtubeapi/apiCalls")
+const course = require('./models/course')
 require('dotenv').config()
-
 
 //Middleware
 app.use(cors())
@@ -19,15 +19,24 @@ app.use(express.json())
 app.use(express.static("public"))
 
 
+
+
+
+
+
 //Routes
 app.get('/', async (req, res) => {
-  const user = await User.create({name: "Hridoy",age:23,email:"me@hridoymh.com",userName:"hridoy",profession:"Student",roll:"Teacther"})
+  
   res.send('Hello World!')
 })
 
-app.get('/data', async (req, res) => {
-  const data = await getData()
-  res.json(data.data)
+app.post('/userdata', authenticateToken, async (req, res) => {
+  const data = await User.findOne({_id:req.user.userid})
+  data.uploadedCourses = await course.find({'_id':data.uploadedCourses},['title','thumb', 'description', '_id'])
+  data.completedCourses = await course.find({'_id':data.completedCourses},['title','thumb', 'description', '_id'])
+  data.enrolledCourses = await course.find({'_id':data.enrolledCourses},['title','thumb', 'description', '_id'])
+  
+  res.json(data)
 })
 
 
@@ -44,9 +53,7 @@ app.post('/login', async (req,res) => {
   }
   
 })
-function generateAccessToken(user) {
-  return jwt.sign(user,process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
-}
+
 
 
 app.post('/signup', async (req,res)=>{
@@ -64,7 +71,6 @@ app.post('/signup', async (req,res)=>{
 
 })
 
-
 app.get('/update', async (req,res)=>{
   const user = await User.findOne({age:22})
   user.enrolledCourses[0] = "edited"
@@ -73,10 +79,52 @@ app.get('/update', async (req,res)=>{
   res.send("updated")
 })
 
-app.get('/addcourse', async (req,res)=>{
-  const data = await getData("C++ Full Course | Data Structures & Algorithms","desc","PLu0W_9lII9aiXlHcLx-mDH1Qul38wD3aR","6484d738965246653e0c8b81")
+app.post('/addcourse', authenticateToken, async (req,res)=>{
+  // const data = await getData("C++ Full Course | Data Structures & Algorithms","desc","PLu0W_9lII9aiXlHcLx-mDH1Qul38wD3aR","6484d738965246653e0c8b81")
+  
+  const datares = await getData(req.body.title,req.body.description,req.body.url,req.user.userid,req.body.price)
+  res.json({status:datares})
+})
+
+app.get("/getcourses",async (req,res)=>{
+  const data = await course.find({},["title","description","thumb","_id","price"])
+  console.log(data)
+  res.json(data)
+})
+
+app.post("/enroll",authenticateToken, async (req,res)=>{
+  const data = await User.findOne({_id:req.user.userid})
+  data.enrolledCourses.push(req.body.course)
+  data.count.push({id:req.body.course,completed:0})
+  await data.save()
+  res.json({status:"enrolled"})
+})
+
+app.get("/course/:id", async (req,res)=>{
+  const data =  await course.findOne({_id:req.params.id})
   res.send(data)
 })
+
+
+//functions
+function generateAccessToken(user) {
+  return jwt.sign(user,process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+}
+
+function authenticateToken(req, res, next){
+  const authHeader = req.headers.authorization
+  const token = authHeader.split(' ')[1]
+  
+  if(token == null) return res.sendStatus(401)
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err,user) => {
+      if(err) return res.sendStatus(403)
+      // console.log(user)
+      req.user = user
+      next()
+  })
+}
+
 
 
 //listenter

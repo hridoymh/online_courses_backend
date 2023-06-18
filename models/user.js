@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
     password: String,
     completedCourses: [],
     enrolledCourses: [],
-    uploadedCourses: []
+    uploadedCourses: [],
+    count: []
 })
 
 

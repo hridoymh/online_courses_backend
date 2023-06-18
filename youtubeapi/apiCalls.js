@@ -1,5 +1,6 @@
 const axios = require("axios")
 const courseModel = require("../models/course")
+const User = require("../models/user")
 
 
 
@@ -15,16 +16,17 @@ const getNextPage = (key,playListId,nextToken) => {
     return `https://www.googleapis.com/youtube/v3/playlistItems?pageToken=${nextToken}&part=snippet&maxResults=50&playlistId=${playListId}&key=${key}`
 }
 
-const getData = async (title,desc,url,owner) => {
-    const course = await courseModel.create({title:title,description:desc,url:url,owner:owner,items:[]})
+const getData = async (title,desc,url,owner,price) => {
+    try{
+    const course = await courseModel.create({title:title,description:desc,url:url,owner:owner,thumb:"",price:price,items:[]})
     let flag = 1;
     let nextToken = ""
     while(flag==1){
-        let res = await axios.get(getURLbyData(key,playListId,nextToken))
+        let res = await axios.get(getURLbyData(key,url,nextToken))
         res.data.items.map(item => {
             course.items.push(item)
         })
-        console.log(res.data)
+        
         if(res.data.hasOwnProperty("nextPageToken"))
         {
             nextToken = res.data.nextPageToken
@@ -33,8 +35,18 @@ const getData = async (title,desc,url,owner) => {
             flag = 0;
         }
     }
+    const img = course.items[0].snippet.thumbnails.medium.url
+    console.log(img)
+    course.thumb = img
+    const user = await User.findOne({_id:owner})
+    user.uploadedCourses.push(course._id)
+    await user.save()
     await course.save()
     return "done"
+    }
+    catch{
+        return "not done"
+    }
 }
 
 module.exports = getData

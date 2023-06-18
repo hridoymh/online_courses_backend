@@ -5,6 +5,9 @@ const courseSchema = new mongoose.Schema({
     description: String,
     url: String,
     owner: String,
+    thumb: String,
+    price: String,
+    cat: String,
     items: []
 })
 
