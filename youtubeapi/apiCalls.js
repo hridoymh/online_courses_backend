@@ -16,9 +16,9 @@ const getNextPage = (key,playListId,nextToken) => {
     return `https://www.googleapis.com/youtube/v3/playlistItems?pageToken=${nextToken}&part=snippet&maxResults=50&playlistId=${playListId}&key=${key}`
 }
 
-const getData = async (title,desc,url,owner,price) => {
+const getData = async (title,desc,url,owner,price,cat) => {
     try{
-    const course = await courseModel.create({title:title,description:desc,url:url,owner:owner,thumb:"",price:price,items:[]})
+    const course = await courseModel.create({title:title,description:desc,url:url,owner:owner,thumb:"",price:price,items:[],chats:[],cat:cat})
     let flag = 1;
     let nextToken = ""
     while(flag==1){

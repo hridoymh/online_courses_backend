@@ -8,7 +8,8 @@ const courseSchema = new mongoose.Schema({
     thumb: String,
     price: String,
     cat: String,
-    items: []
+    items: [],
+    chats: []
 })
 
 
